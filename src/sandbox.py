@@ -1,59 +1,79 @@
 import json
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-file = open("example_payloads/payload3.json")
-p3 = json.load(file)
 
-load = p3["load"]
+def main():
+    file = open("example_payloads/payload3.json")
+    payload = json.load(file)
 
-for plant in p3["powerplants"]:
-    ptype = plant["type"]
-    if ptype == "windturbine":
-        print("Wind turbine found")
-        price = 0
-        print(f"price is {price}")
-        p = plant["pmax"] * p3["fuels"]["wind(%)"] / 100
-        print(f"p = {p}")
-    elif ptype == "gasfired":
-        print("Gas fired plant found")
-        price = p3["fuels"]["gas(euro/MWh)"]
-        print(f"price is {price}")
-        p = plant["pmax"]
-        print(f"p = {p}")
-    elif ptype == "turbojet":
-        print("Turbojet found")
-        price = p3["fuels"]["kerosine(euro/MWh)"]
-        print(f"price is {price}")
-        p = plant["pmax"]
-        print(f"p = {p}")
-    else:
-        print("Unknown plant type found")
-    cost = price / plant["efficiency"]
-    print(f"Cost is {cost}")
-    print('---')
+    load = payload["load"]
 
-print(load)
+    for plant in payload["powerplants"]:
+        plantType = plant["type"]
+        if plantType == "windturbine":
+            print("Wind turbine found")
+            price = 0
+            print(f"price is {price}")
+            p = plant["pmax"] * payload["fuels"]["wind(%)"] / 100
+            print(f"p = {p}")
+        elif plantType == "gasfired":
+            print("Gas fired plant found")
+            price = payload["fuels"]["gas(euro/MWh)"]
+            print(f"price is {price}")
+            p = plant["pmax"]
+            print(f"p = {p}")
+        elif plantType == "turbojet":
+            print("Turbojet found")
+            price = payload["fuels"]["kerosine(euro/MWh)"]
+            print(f"price is {price}")
+            p = plant["pmax"]
+            print(f"p = {p}")
+        else:
+            print("Unknown plant type found")
+        cost = price / plant["efficiency"]
+        print(f"Cost is {cost}")
+        print("---")
 
-df = pd.DataFrame(p3["powerplants"])
+    print(load)
 
-conditions = [df["type"] == "gasfired", df["type"] == "turbojet", df["type"] == "windturbine"]
-p = [df["pmax"], df["pmax"], df["pmax"] * p3["fuels"]["wind(%)"] / 100]
-price = [p3["fuels"]["gas(euro/MWh)"], p3["fuels"]["kerosine(euro/MWh)"], 0]
+    df = pd.DataFrame(payload["powerplants"])
 
-df["p"] = np.select(conditions, p, default=0)
-df["price"] = np.select(conditions, price, default=0)
-df["cost"] = df["price"] / df["efficiency"]
+    conditions = [
+        df["type"] == "gasfired",
+        df["type"] == "turbojet",
+        df["type"] == "windturbine",
+    ]
+    p = [df["pmax"], df["pmax"], df["pmax"] * payload["fuels"]["wind(%)"] / 100]
+    price = [
+        payload["fuels"]["gas(euro/MWh)"],
+        payload["fuels"]["kerosine(euro/MWh)"],
+        0,
+    ]
 
-df2 = df.sort_values(by=['cost', 'p'], ascending=[True, False])
+    df["p"] = np.select(conditions, p, default=0)
+    df["price"] = np.select(conditions, price, default=0)
+    df["cost"] = df["price"] / df["efficiency"]
 
-df2["new"] = np.maximum(load - df2["p"].cumsum(), 0)
-df2["new2"] = df2["new"].shift(1)
-df2["new3"] = df2[["new2", "p"]].min(axis=1)
+    dfSorted = df.sort_values(by=["cost", "p"], ascending=[True, False])
 
-result = df2[['name', 'new3']]
+    dfSorted["remainingLoadAfter"] = np.maximum(load - dfSorted["p"].cumsum(), 0)
+    dfSorted["remainingLoadBefore"] = dfSorted["remainingLoadAfter"].shift(
+        1, fill_value=load
+    )
+    dfSorted["response"] = (
+        dfSorted["remainingLoadBefore"] - dfSorted["remainingLoadAfter"]
+    )
 
-dict_result = result.to_dict(orient='records')
+    pd.set_option("display.max_columns", None)
+    print(dfSorted)
 
-print(json.dumps(dict_result, indent=4))
+    result = dfSorted[["name", "response"]]
 
+    dict_result = result.to_dict(orient="records")
+
+    print(json.dumps(dict_result, indent=4))
+
+
+if __name__ == "__main__":
+    main()
