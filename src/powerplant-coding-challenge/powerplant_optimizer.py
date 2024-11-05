@@ -3,16 +3,14 @@ import numpy as np
 import pandas as pd
 
 
-def main():
-    file = open("example_payloads/payload3.json")
-    payload = json.load(file)
+def load_payload(file_path):
+    with open(file_path, "r") as file:
+        payload = json.load(file)
+    return payload
 
-    load = payload["load"]
 
-    print(load)
-
+def prepare_dataframe(payload):
     df = pd.DataFrame(payload["powerplants"])
-
     conditions = [
         df["type"] == "gasfired",
         df["type"] == "turbojet",
@@ -24,26 +22,32 @@ def main():
         payload["fuels"]["kerosine(euro/MWh)"],
         0,
     ]
-
     df["p"] = np.select(conditions, p, default=0)
     df["price"] = np.select(conditions, price, default=0)
     df["cost"] = df["price"] / df["efficiency"]
+    return df
 
-    dfSorted = df.sort_values(by=["cost", "p"], ascending=[True, False])
 
-    dfSorted["remainingLoadAfter"] = np.maximum(load - dfSorted["p"].cumsum(), 0)
-    dfSorted["remainingLoadBefore"] = dfSorted["remainingLoadAfter"].shift(
+def optimize_power_output(df, load):
+    df_sorted = df.sort_values(by=["cost", "p"], ascending=[True, False])
+    df_sorted["remaining_load_after"] = np.maximum(load - df_sorted["p"].cumsum(), 0)
+    df_sorted["remaining_load_before"] = df_sorted["remaining_load_after"].shift(
         1, fill_value=load
     )
-    dfSorted["response"] = (
-        dfSorted["remainingLoadBefore"] - dfSorted["remainingLoadAfter"]
+    df_sorted["p"] = (
+        df_sorted["remaining_load_before"] - df_sorted["remaining_load_after"]
     )
-
     pd.set_option("display.max_columns", None)
-    print(dfSorted)
+    print(df_sorted)
+    return df_sorted[["name", "p"]]
 
-    result = dfSorted[["name", "response"]]
 
+def main():
+    file_path = "example_payloads/payload3.json"
+    payload = load_payload(file_path)
+    load = payload["load"]
+    df = prepare_dataframe(payload)
+    result = optimize_power_output(df, load)
     print(pd.DataFrame.to_json(result, orient="records", indent=4))
 
 
