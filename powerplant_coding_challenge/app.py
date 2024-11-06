@@ -26,7 +26,9 @@ def production_plan():
         load = get_load(payload)
         df = get_powerplants(payload)
         prepared_df = prepare_dataframe(df, gas, kerosine, wind)
-        optimized_df_without_min = optimize_power_output_without_min(prepared_df, load, wind)
+        optimized_df_without_min = optimize_power_output_without_min(
+            prepared_df, load, wind
+        )
         optimized_df = adjust_to_pmin(optimized_df_without_min)
         response = optimized_df.to_json(orient="records", indent=4)
         return Response(response, mimetype="application/json")
