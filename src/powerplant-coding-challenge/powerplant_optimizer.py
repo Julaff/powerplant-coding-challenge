@@ -48,7 +48,9 @@ def main():
     load = payload["load"]
     df = prepare_dataframe(payload)
     result = optimize_power_output(df, load)
-    print(pd.DataFrame.to_json(result, orient="records", indent=4))
+    result_json = pd.DataFrame.to_json(result, orient="records", indent=4)
+    print(result_json)
+    return result_json
 
 
 if __name__ == "__main__":
