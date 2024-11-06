@@ -1,11 +1,12 @@
-from flask import Flask, jsonify, request, Response
 import logging
-from utils import get_fuels, get_load, get_powerplants
+
+from flask import Flask, Response, jsonify, request
 from powerplant_optimizer import (
-    prepare_dataframe,
-    optimize_power_output_without_min,
     adjust_to_pmin,
+    optimize_power_output_without_min,
+    prepare_dataframe,
 )
+from utils import get_fuels, get_load, get_powerplants
 
 # Initialize Flask app
 app = Flask(__name__)

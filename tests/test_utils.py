@@ -1,4 +1,5 @@
 import pytest
+
 from powerplant_coding_challenge.utils import get_fuels, get_load, get_powerplants
 
 

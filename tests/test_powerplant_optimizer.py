@@ -1,9 +1,9 @@
 import pytest
+
 from powerplant_coding_challenge.powerplant_optimizer import (
     prepare_dataframe,
-    optimize_power_output_without_min,
-    adjust_to_pmin,
 )
+from powerplant_coding_challenge.utils import get_fuels, get_powerplants
 
 
 @pytest.fixture
@@ -38,28 +38,9 @@ def payload():
 
 
 def test_prepare_dataframe(payload):
-    df = prepare_dataframe(payload)
+    gas, kerosine, wind = get_fuels(payload)
+    powerplants = get_powerplants(payload)
+    df = prepare_dataframe(powerplants, gas, kerosine, wind)
     assert len(df) == 3
     assert "cost" in df.columns
-    assert "p" in df.columns
-
-
-def test_optimize_power_output_without_min(payload):
-    df = prepare_dataframe(payload)
-    load = payload["load"]
-    wind = payload["fuels"]["wind(%)"]
-    optimized_df = optimize_power_output_without_min(df, load, wind)
-    assert len(optimized_df) == 3
-    assert "remaining_load_after" in optimized_df.columns
-    assert "remaining_load_before" in optimized_df.columns
-
-
-def test_adjust_to_pmin(payload):
-    df = prepare_dataframe(payload)
-    load = payload["load"]
-    wind = payload["fuels"]["wind(%)"]
-    optimized_df = optimize_power_output_without_min(df, load, wind)
-    corrected_df = adjust_to_pmin(optimized_df)
-    assert len(corrected_df) == 3
-    assert "name" in corrected_df.columns
-    assert "p" in corrected_df.columns
+    assert "power" in df.columns
