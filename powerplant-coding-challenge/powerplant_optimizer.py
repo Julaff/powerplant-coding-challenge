@@ -16,21 +16,22 @@ def prepare_dataframe(payload):
         df["type"] == "turbojet",
         df["type"] == "windturbine",
     ]
-    p = [df["pmax"], df["pmax"], df["pmax"] * payload["fuels"]["wind(%)"] / 100]
+    power = [df["pmax"], df["pmax"], df["pmax"] * payload["fuels"]["wind(%)"] / 100]
     price = [
         payload["fuels"]["gas(euro/MWh)"],
         payload["fuels"]["kerosine(euro/MWh)"],
         0,
     ]
-    df["p"] = np.select(conditions, p, default=0)
+    df["power"] = np.select(conditions, power, default=0)
     df["price"] = np.select(conditions, price, default=0)
     df["cost"] = df["price"] / df["efficiency"]
+    df["min_cost"] = df["price"] * df["pmin"]
     return df
 
 
 def optimize_power_output(df, load):
-    df_sorted = df.sort_values(by=["cost", "p"], ascending=[True, False])
-    df_sorted["remaining_load_after"] = np.maximum(load - df_sorted["p"].cumsum(), 0)
+    df_sorted = df.sort_values(by=["cost", "power"], ascending=[True, False])
+    df_sorted["remaining_load_after"] = np.maximum(load - df_sorted["power"].cumsum(), 0)
     df_sorted["remaining_load_before"] = df_sorted["remaining_load_after"].shift(
         1, fill_value=load
     )
@@ -43,7 +44,7 @@ def optimize_power_output(df, load):
 
 
 def main():
-    file_path = "example_payloads/payload3.json"
+    file_path = "example_payloads/payload2.json"
     payload = load_payload(file_path)
     load = payload["load"]
     df = prepare_dataframe(payload)
