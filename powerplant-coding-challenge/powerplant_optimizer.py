@@ -1,58 +1,53 @@
-import json
 import numpy as np
 import pandas as pd
 
 
-def load_payload(file_path):
-    with open(file_path, "r") as file:
-        payload = json.load(file)
-    return payload
-
-
-def prepare_dataframe(payload):
-    df = pd.DataFrame(payload["powerplants"])
+def prepare_dataframe(df, gas, kerosine, wind):
     conditions = [
         df["type"] == "gasfired",
         df["type"] == "turbojet",
         df["type"] == "windturbine",
     ]
-    power = [df["pmax"], df["pmax"], df["pmax"] * payload["fuels"]["wind(%)"] / 100]
+    power = [df["pmax"], df["pmax"], df["pmax"] * wind / 100]
     price = [
-        payload["fuels"]["gas(euro/MWh)"],
-        payload["fuels"]["kerosine(euro/MWh)"],
+        gas,
+        kerosine,
         0,
     ]
     df["power"] = np.select(conditions, power, default=0)
     df["price"] = np.select(conditions, price, default=0)
     df["cost"] = df["price"] / df["efficiency"]
-    df["min_cost"] = df["price"] * df["pmin"]
-    return df
+    return df[["name", "type", "pmin", "power", "cost"]]
 
 
-def optimize_power_output(df, load):
-    df_sorted = df.sort_values(by=["cost", "power"], ascending=[True, False])
-    df_sorted["remaining_load_after"] = np.maximum(load - df_sorted["power"].cumsum(), 0)
+def sort_dataframe(df, wind):
+    df["ignore"] = np.where((df["type"] == "windturbine") & (wind == 0), 1, 0)
+    return df.sort_values(
+        by=["ignore", "cost", "power"], ascending=[True, True, False]
+    )[["name", "type", "pmin", "power", "cost"]]
+
+
+def optimize_power_output_without_min(df, load, wind):
+    df_sorted = sort_dataframe(df, wind)
+    df_sorted["remaining_load_after"] = np.maximum(
+        load - df_sorted["power"].cumsum(), 0
+    )
     df_sorted["remaining_load_before"] = df_sorted["remaining_load_after"].shift(
         1, fill_value=load
     )
-    df_sorted["p"] = (
+    df_sorted["p_without_min"] = (
         df_sorted["remaining_load_before"] - df_sorted["remaining_load_after"]
     )
+    return df_sorted[["name", "pmin", "p_without_min"]]
+
+
+def correct_excess(df):
+    df["excess"] = np.where(
+        df["p_without_min"] == 0,
+        0,
+        df[["pmin", "p_without_min"]].max(axis=1) - df["p_without_min"],
+    )
+    df["recover"] = df["excess"].shift(-1, fill_value=0)
+    df["p"] = df["p_without_min"] + df["excess"] - df["recover"]
     pd.set_option("display.max_columns", None)
-    print(df_sorted)
-    return df_sorted[["name", "p"]]
-
-
-def main():
-    file_path = "example_payloads/payload2.json"
-    payload = load_payload(file_path)
-    load = payload["load"]
-    df = prepare_dataframe(payload)
-    result = optimize_power_output(df, load)
-    result_json = pd.DataFrame.to_json(result, orient="records", indent=4)
-    print(result_json)
-    return result_json
-
-
-if __name__ == "__main__":
-    main()
+    return df[["name", "p"]]
