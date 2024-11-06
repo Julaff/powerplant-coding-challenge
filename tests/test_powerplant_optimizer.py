@@ -1,9 +1,8 @@
 import pytest
-import pandas as pd
-from powerplant_optimizer import (
+from powerplant_coding_challenge.powerplant_optimizer import (
     prepare_dataframe,
     optimize_power_output_without_min,
-    correct_excess,
+    adjust_to_pmin,
 )
 
 
@@ -55,12 +54,12 @@ def test_optimize_power_output_without_min(payload):
     assert "remaining_load_before" in optimized_df.columns
 
 
-def test_correct_excess(payload):
+def test_adjust_to_pmin(payload):
     df = prepare_dataframe(payload)
     load = payload["load"]
     wind = payload["fuels"]["wind(%)"]
     optimized_df = optimize_power_output_without_min(df, load, wind)
-    corrected_df = correct_excess(optimized_df)
+    corrected_df = adjust_to_pmin(optimized_df)
     assert len(corrected_df) == 3
     assert "name" in corrected_df.columns
     assert "p" in corrected_df.columns

@@ -1,5 +1,5 @@
 import pytest
-from utils import get_fuels, get_load, get_powerplants
+from powerplant_coding_challenge.utils import get_fuels, get_load, get_powerplants
 
 
 @pytest.fixture
@@ -47,5 +47,5 @@ def test_get_load(payload):
 
 def test_get_powerplants(payload):
     powerplants = get_powerplants(payload)
-    assert len(powerplants) == 3
-    assert powerplants[0]["name"] == "gasfiredbig1"
+    assert powerplants.size == 15
+    assert powerplants["name"][0] == "gasfiredbig1"
