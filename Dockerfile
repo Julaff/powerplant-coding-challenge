@@ -8,6 +8,4 @@ RUN pip install poetry
 
 RUN poetry install
 
-ENV PYTHONPATH="${PYTHONPATH}:/app/src/powerplant_coding_challenge"
-
-#ENTRYPOINT ["poetry", "run", "python", "-m", "powerplant_coding_challenge.app"]
+ENTRYPOINT ["poetry", "run", "python", "-m", "powerplant_coding_challenge.app"]

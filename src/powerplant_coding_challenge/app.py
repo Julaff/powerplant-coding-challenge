@@ -1,12 +1,12 @@
 import logging
 
 from flask import Flask, Response, jsonify, request
-from powerplant_optimizer import (
+from powerplant_coding_challenge.powerplant_optimizer import (
     adjust_to_pmin,
     optimize_power_output_without_min,
     prepare_dataframe,
 )
-from utils import get_fuels, get_load, get_powerplants
+from powerplant_coding_challenge.utils import get_fuels, get_load, get_powerplants
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -45,4 +45,4 @@ def production_plan():
 
 
 if __name__ == "__main__":
-    app.run(port=8888, debug=True, host='0.0.0.0')
+    app.run(port=8888, debug=True, host="0.0.0.0")

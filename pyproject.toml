@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "powerplant-coding-challenge"
+name = "powerplant_coding_challenge"
 version = "0.1.0"
 description = "Powerplant coding challenge"
 authors = ["Julien Laffargue <julien.laffargue@gmail.com>"]
