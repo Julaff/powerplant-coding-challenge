@@ -39,7 +39,8 @@ def sort_dataframe(df, wind):
     Returns:
         pd.DataFrame: The sorted DataFrame.
     """
-    df["ignore"] = np.where((df["type"] == "windturbine") & (wind == 0), 1, 0)
+    filter = (df["type"] == "windturbine") & (wind == 0)
+    df["ignore"] = np.where(filter, 1, 0)
     return df.sort_values(
         by=["ignore", "cost", "power"], ascending=[True, True, False]
     )[["name", "type", "pmin", "power", "cost"]]
